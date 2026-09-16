@@ -2,9 +2,8 @@ name: Run The Oracle Hourly
 
 on:
   schedule:
-    # Runs every hour on the hour
     - cron: '0 * * * *'
-  workflow_dispatch: # Allows you to manually click "Run" in GitHub to test it instantly
+  workflow_dispatch:
 
 jobs:
   run-oracle:
@@ -19,10 +18,11 @@ jobs:
           python-version: '3.10'
 
       - name: Install dependencies
-        run: pip install requests
+        run: pip install requests google-genai
 
       - name: Run Oracle script
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python oracle.py

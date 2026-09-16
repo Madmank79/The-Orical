@@ -2,6 +2,7 @@ import os
 import requests
 from google import genai
 
+# Pull credentials from environment variables
 TOKEN = os.environ.get("TELEGRAM_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
@@ -22,13 +23,15 @@ def send_update():
     )
     
     try:
+        # Generate the content using Gemini 3.6 Flash
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.6-flash",
             contents=prompt,
         )
         mood_message = response.text
+        print("Successfully generated AI message!")
     except Exception as e:
-        print(f"Error generating content from Gemini: {e}")
+        print(f"ERROR generating content from Gemini: {e}")
         return
     
     # Send the generated message to Telegram
@@ -40,7 +43,7 @@ def send_update():
     }
     
     tg_response = requests.post(url, json=payload)
-    print("Broadcast status:", tg_response.json())
+    print("Telegram Broadcast status:", tg_response.json())
 
 if __name__ == "__main__":
     send_update()

@@ -1,46 +1,46 @@
 import os
-import random
 import requests
+from google import genai
 
 TOKEN = os.environ.get("TELEGRAM_TOKEN")
 CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
-
-world_moods = [
-    "🔮 **The Oracle's Hourly Portent**\n\n*Markets:* Global financial currents are shifting erratically.\n*Governments:* New decrees ripple through international borders.\n*World Mood:* Highly volatile and electric. Proceed with caution across all sectors.",
-    
-    "🔮 **The Oracle's Hourly Portent**\n\n*Markets:* Capital flows steady into safe havens today.\n*Governments:* Diplomatic talks show faint signs of alignment.\n*World Mood:* Quietly observant. A period of heavy preparation.",
-    
-    "🔮 **The Oracle's Hourly Portent**\n\n*Markets:* Aggressive spikes detected in regional trade metrics.\n*Governments:* Policy shifts spark intense debate among state powers.\n*World Mood:* Driven, restless, and hungry for disruption.",
-    
-    "🔮 **The Oracle speaks**\n\nThe next hour favours those who stay calm under pressure.\nSomething small is about to matter more than it should.",
-    
-    "🔮 **Hourly Vision**\n\nOld patterns are breaking. Watch the quiet movements — they carry the real signal."
-]
+GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
 
 def send_update():
-    if not TOKEN or not CHAT_ID:
-        print("Error: Missing TELEGRAM_TOKEN or TELEGRAM_CHAT_ID")
+    if not TOKEN or not CHAT_ID or not GEMINI_KEY:
+        print("Error: Missing required environment variables.")
         return
 
-    # Random picture
-    seed = random.randint(1, 999999)
-    image_url = f"https://picsum.photos/seed/{seed}/800/600"
-
-    caption = random.choice(world_moods)
-
-    url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
+    # Initialize the Google GenAI client
+    client = genai.Client(api_key=GEMINI_KEY)
+    
+    # Prompt the AI to generate a unique hourly briefing
+    prompt = (
+        "Write a short, punchy hourly portent for an Oracle bot. "
+        "Blend global markets, government/political shifts, and a sharp global mood. "
+        "Format it nicely with Markdown bolding and emoji icons."
+    )
+    
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+        )
+        mood_message = response.text
+    except Exception as e:
+        print(f"Error generating content from Gemini: {e}")
+        return
+    
+    # Send the generated message to Telegram
+    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     payload = {
         "chat_id": CHAT_ID,
-        "photo": image_url,
-        "caption": caption,
+        "text": mood_message,
         "parse_mode": "Markdown"
     }
-
-    try:
-        response = requests.post(url, json=payload, timeout=20)
-        print("Broadcast status:", response.json())
-    except Exception as e:
-        print("Error sending:", e)
+    
+    tg_response = requests.post(url, json=payload)
+    print("Broadcast status:", tg_response.json())
 
 if __name__ == "__main__":
     send_update()

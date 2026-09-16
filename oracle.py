@@ -22,7 +22,7 @@ def send_update():
         print("Error: Missing TELEGRAM_TOKEN or TELEGRAM_CHAT_ID")
         return
 
-    # Random high-quality image
+    # Random picture
     seed = random.randint(1, 999999)
     image_url = f"https://picsum.photos/seed/{seed}/800/600"
 

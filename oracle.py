@@ -15,7 +15,7 @@ def send_update():
 
     client = genai.Client(api_key=GEMINI_KEY)
     
-    # Prompt requesting both text portent and a matching visual graphic
+    # Prompt requesting both the text portent and the actual generated image
     prompt = (
         "Write a short, punchy hourly portent for an Oracle bot blending global markets, "
         "government shifts, and a sharp global mood, formatted with Markdown and emojis. "
@@ -26,28 +26,28 @@ def send_update():
     image_bytes = None
 
     try:
-        # Request native multimodal generation from Gemini 3.6 Flash
+        # Use gemini-3.1-flash-image to natively generate text and image contents
         response = client.models.generate_content(
-            model="gemini-3.6-flash",
+            model="gemini-3.1-flash-image",
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_modalities=["TEXT", "IMAGE"]
             )
         )
         
-        # Parse response parts for text and image data
+        # Parse through the response parts
         for part in response.candidates[0].content.parts:
             if part.text:
                 mood_message += part.text
             elif part.inline_data:
                 image_bytes = part.inline_data.data
                 
-        print("Successfully generated AI content!")
+        print("Successfully generated AI content and image!")
     except Exception as e:
         print(f"ERROR generating content from Gemini: {e}")
         return
 
-    # Broadcast to Telegram: sendPhoto if image exists, otherwise sendMessage
+    # Broadcast to Telegram: sendPhoto with the graphic, or fallback to text if missing
     if image_bytes:
         url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
         files = {'photo': ('oracle_mood.jpg', BytesIO(image_bytes), 'image/jpeg')}

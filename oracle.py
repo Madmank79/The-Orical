@@ -1,4 +1,5 @@
 import os
+import random
 import requests
 from io import BytesIO
 from google import genai
@@ -14,53 +15,48 @@ def send_update():
         return
 
     client = genai.Client(api_key=GEMINI_KEY)
-    
+
     prompt = (
-        "Write a short, punchy hourly portent for an Oracle bot blending global markets, "
-        "government shifts, and a sharp global mood, formatted with Markdown and emojis. "
-        "Also generate a dark, moody, cinematic cyberpunk visual graphic representing this exact mood."
+        "Write a short, punchy hourly portent for an Oracle bot. "
+        "Blend global markets, government shifts, and a sharp global mood. "
+        "Format with Markdown and emojis. Keep it under 300 characters. "
+        "Make it dark, cinematic and mysterious."
     )
-    
+
     mood_message = ""
-    image_bytes = None
 
     try:
-        # Request both text and image natively from gemini-3.1-flash-image
+        # Free text model
         response = client.models.generate_content(
-            model="gemini-3.1-flash-image",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_modalities=["TEXT", "IMAGE"],
-                image_config=types.ImageConfig(
-                    aspect_ratio="1:1"
-                )
-            )
+            model="gemini-2.0-flash",          # Free model
+            contents=prompt
         )
         
-        # Parse the response parts safely
-        for part in response.candidates[0].content.parts:
-            if part.text:
-                mood_message += part.text
-            elif part.inline_data:
-                image_bytes = part.inline_data.data
-                
-        print("Successfully generated AI content and image!")
+        mood_message = response.text.strip()
+        print("Successfully generated AI text!")
     except Exception as e:
         print(f"ERROR generating content from Gemini: {e}")
-        return
+        # Fallback text if Gemini fails
+        mood_message = "🔮 **The Oracle speaks**\n\nThe currents are shifting. Stay alert."
 
-    # Post to Telegram (Photo with caption if image exists, otherwise fallback to text)
-    if image_bytes:
-        url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
-        files = {'photo': ('oracle_mood.jpg', BytesIO(image_bytes), 'image/jpeg')}
-        data = {"chat_id": CHAT_ID, "caption": mood_message, "parse_mode": "Markdown"}
-        tg_response = requests.post(url, data=data, files=files)
-    else:
-        url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-        payload = {"chat_id": CHAT_ID, "text": mood_message, "parse_mode": "Markdown"}
-        tg_response = requests.post(url, json=payload)
-        
-    print("Telegram Broadcast status:", tg_response.json())
+    # Free random high-quality image from Picsum
+    seed = random.randint(1, 999999)
+    image_url = f"https://picsum.photos/seed/{seed}/800/800"
+
+    # Send photo with caption to Telegram
+    url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
+    payload = {
+        "chat_id": CHAT_ID,
+        "photo": image_url,
+        "caption": mood_message,
+        "parse_mode": "Markdown"
+    }
+
+    try:
+        tg_response = requests.post(url, json=payload, timeout=20)
+        print("Telegram Broadcast status:", tg_response.json())
+    except Exception as e:
+        print("Error sending to Telegram:", e)
 
 if __name__ == "__main__":
     send_update()
